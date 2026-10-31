@@ -175,18 +175,28 @@ const SUG={
  dihydroxyacetone:{type:'keto',n:3,sides:[]},
  erythrose:{type:'aldo',n:4,sides:['R','R']},
  threose:{type:'aldo',n:4,sides:['L','R']},
+ erythrulose:{type:'keto',n:4,sides:['R']},
  ribose:{type:'aldo',n:5,sides:['R','R','R']},
  arabinose:{type:'aldo',n:5,sides:['L','R','R']},
  xylose:{type:'aldo',n:5,sides:['R','L','R']},
- deoxyribose:{type:'aldo',n:5,sides:['X','R','R'],deoxy:true},
+ lyxose:{type:'aldo',n:5,sides:['L','L','R']},
  ribulose:{type:'keto',n:5,sides:['R','R']},
+ xylulose:{type:'keto',n:5,sides:['L','R']},
+ allose:{type:'aldo',n:6,sides:['R','R','R','R']},
+ altrose:{type:'aldo',n:6,sides:['L','R','R','R']},
  glucose:{type:'aldo',n:6,sides:['R','L','R','R']},
  mannose:{type:'aldo',n:6,sides:['L','L','R','R']},
+ gulose:{type:'aldo',n:6,sides:['R','R','L','R']},
+ idose:{type:'aldo',n:6,sides:['L','R','L','R']},
  galactose:{type:'aldo',n:6,sides:['R','L','L','R']},
- fructose:{type:'keto',n:6,sides:['L','R','R']}
+ talose:{type:'aldo',n:6,sides:['L','L','L','R']},
+ psicose:{type:'keto',n:6,sides:['R','R','R']},
+ fructose:{type:'keto',n:6,sides:['L','R','R']},
+ sorbose:{type:'keto',n:6,sides:['R','L','R']},
+ tagatose:{type:'keto',n:6,sides:['L','L','R']}
 };
 const SZ=['','','','tri','tetr','pent','hex'];
-const sugName=(k,L)=>(L?'L-':'D-')+(k==='deoxyribose'?'2-deoxyribose':k);
+const sugName=(k,L)=>k==='dihydroxyacetone'?'1,3-dihydroxyacetone':(L?'L-':'D-')+k;
 const sugKind=k=>{const s=SUG[k];return (s.type==='aldo'?'aldo':'keto')+SZ[s.n]+'ose'};
 const chiralCount=k=>SUG[k].sides.filter(x=>x!=='X').length;
 const mirror=sd=>sd.map(x=>x==='R'?'L':x==='L'?'R':x);
@@ -214,34 +224,34 @@ function havSpec(k,anom){const s=SUG[k];const sd=s.sides;
  if(s.type==='aldo'&&s.n===5)return {size:5,ring:[{c:'C1',...aOH},{c:'C2',...lab(sd[0])},{c:'C3',...lab(sd[1])},{c:'C4',up:'CH2OH',down:'H'}]};
  if(s.type==='keto'&&s.n===6){const c2=anom==='α'?{up:'CH2OH',down:'OH'}:{up:'OH',down:'CH2OH'};return {size:5,ring:[{c:'C2',...c2},{c:'C3',...lab(sd[0])},{c:'C4',...lab(sd[1])},{c:'C5',up:'CH2OH',down:'H'}]}}
  return null}
-const hl=(x,ox,y,l)=>l==='CH2OH'?txt(x-6,y,l,COL.C,16,'start'):txt(x+ox,y,l,l==='OH'?COL.O:COL.C,16);
+const hl=(x,ox,y,l)=>l==='CH2OH'?txt(x-6,y,l,COL.C,16,'start'):(l==='OH'?txt(x+ox-6.5,y,l,COL.O,16,'start'):txt(x+ox,y,l,COL.C,16));
 function haworthSVG(k,anom,opt){opt=opt||{};const sp=havSpec(k,anom),sc=opt.scale||1,keto=SUG[k].type==='keto';let P,order,front;
  if(sp.size===6){P={O:[190,56],C1:[240,92],C2:[170,130],C3:[75,130],C4:[28,92],C5:[108,56]};order=['O','C1','C2','C3','C4','C5'];front=['C2','C3']}
  else if(keto){P={O:[178,44],C2:[244,88],C3:[216,138],C4:[124,138],C5:[96,88]};order=['O','C2','C3','C4','C5'];front=['C3','C4']}
  else{P={O:[178,44],C1:[244,88],C2:[216,138],C3:[124,138],C4:[96,88]};order=['O','C1','C2','C3','C4'];front=['C2','C3']}
  let out='';for(let i=0;i<order.length;i++){const A=order[i],B=order[(i+1)%order.length],a=P[A],b=P[B];out+=ln(a[0],a[1],b[0],b[1],(A===front[0]&&B===front[1])?5.5:2.6)}
  out+=txt(P.O[0],P.O[1],'O',COL.O);const colr=l=>l==='OH'?COL.O:COL.C;
- sp.ring.forEach(r=>{const p=P[r.c];const fr=front.includes(r.c),bk=!fr&&r.c!=='C1'&&!(keto&&r.c==='C2')&&r.c!=='C4'?1:0;const du=fr?24:30,dd=bk?24:30,ox=(r.c==='C1'||(keto&&r.c==='C2'))?(sp.size===6?8:14):0;out+=ln(p[0],p[1],p[0]+ox*0,p[1]-du)+ln(p[0],p[1],p[0],p[1]+dd)+hl(p[0],ox,p[1]-du-10,r.up)+hl(p[0],ox,p[1]+dd+10,r.down);out+=`<text x="${(p[0]+(125-p[0])*.24).toFixed(0)}" y="${(p[1]+(88-p[1])*.24+4).toFixed(0)}" text-anchor="middle" font-size="11" fill="#8a96a0" font-family="Inter,sans-serif">${r.c.slice(1)}</text>`});
+ sp.ring.forEach(r=>{const p=P[r.c];const fr=front.includes(r.c),bk=!fr&&r.c!=='C1'&&!(keto&&r.c==='C2')&&r.c!=='C4'?1:0;const du=fr?24:30,dd=bk?24:30,ox=(r.c==='C1'||(keto&&r.c==='C2'))?0:0;out+=ln(p[0],p[1],p[0]+ox*0,p[1]-du)+ln(p[0],p[1],p[0],p[1]+dd)+hl(p[0],ox,p[1]-du-10,r.up)+hl(p[0],ox,p[1]+dd+10,r.down);out+=`<text x="${(p[0]+(125-p[0])*.24).toFixed(0)}" y="${(p[1]+(88-p[1])*.24+4).toFixed(0)}" text-anchor="middle" font-size="11" fill="#8a96a0" font-family="Inter,sans-serif">${r.c.slice(1)}</text>`});
  const w=sp.size===6?270:320,h=190;return `<svg class="mol" viewBox="0 0 ${w} ${h}" width="${(w*sc).toFixed(0)}" height="${(h*sc).toFixed(0)}" role="img" aria-label="Haworth projection" xmlns="http://www.w3.org/2000/svg">${out}</svg>`}
 const HSTEM={glucose:'glucopyranose',galactose:'galactopyranose',mannose:'mannopyranose',fructose:'fructofuranose',ribose:'ribofuranose'};
 const havName=(k,a)=>`${a}-D-${HSTEM[k]}`;
 
 /* ===== Question generators ===== */
-const ALLK=['glyceraldehyde','dihydroxyacetone','erythrose','threose','ribose','arabinose','xylose','deoxyribose','ribulose','glucose','mannose','galactose','fructose'];
-const KINDS=['aldotriose','ketotriose','aldotetrose','aldopentose','ketopentose','aldohexose','ketohexose'];
-const nice=k=>k==='deoxyribose'?'2-deoxyribose':k;
+const ALLK=Object.keys(SUG);
+const KINDS=['aldotriose','ketotriose','aldotetrose','ketotetrose','aldopentose','ketopentose','aldohexose','ketohexose'];
+const nice=k=>k==='dihydroxyacetone'?'1,3-dihydroxyacetone':k;
 const clsBag=bag(['draw','name','draw']),fiBag=bag(['dl','id','id','dl']),haBag=bag(['anomer','ring','match','anomer','match']),stBag=bag(['count','rel','rel','count']),diBag=bag(['comp','source','link','poly','red','red','digest']),rxBag=bag(['benedict','benedict','ox','red','hydro','ferment','cond']);
 const relBag=bag(['enantiomer','epimer','structural','none']);
 function kindWhy(k){const s=SUG[k];return `${sugKind(k)}: ${s.n} carbons (${SZ[s.n]}ose) and ${s.type==='aldo'?'an aldehyde (–CHO) at C1, so it is an aldose':'a ketone (C=O) at C2, so it is a ketose'}.`}
-function genClassify(){const k=pickOne(ALLK.filter(x=>x!=='deoxyribose'));const L=Math.random()<.25&&chiralCount(k)>0;const ans=sugKind(k),s=SUG[k];
+function genClassify(){const k=pickOne(ALLK);const L=Math.random()<.25&&chiralCount(k)>0;const ans=sugKind(k),s=SUG[k];
  const sw=(s.type==='aldo'?'keto':'aldo')+SZ[s.n]+'ose';const others=KINDS.filter(x=>x!==ans);const alt=[sw,...shuf(others.filter(x=>x!==sw))].slice(0,3);const opts=shuf([ans,...alt]);const showDraw=clsBag()==='draw';
  const prompt=showDraw?`<p class="prompt">What type of monosaccharide is shown?</p><div class="struct">${fischerSVG(k,L)}</div>`:`<p class="prompt">${esc(nice(k)[0].toUpperCase()+nice(k).slice(1))} contains ${s.n} carbons and ${s.type==='aldo'?'an aldehyde group':'a ketone group'}. How is it classified?</p>`;
  return {kind:'classify',html:prompt,options:opts.map(o=>({key:o,html:o})),answer:ans,hint:'Count the carbons for the size (tri-, tetr-, pent-, hex-). Look at the top: –CHO means aldo-, a C=O in the middle (at C2) means keto-.',why:kindWhy(k)+(showDraw?` This is ${sugName(k,L)}.`:''),cols:2}}
 function dOrL(k,L){return L?'L':'D'}
 function genFischer(){const t=fiBag();
- if(t==='dl'){const k=pickOne(ALLK.filter(x=>chiralCount(x)>0&&x!=='deoxyribose'));const L=Math.random()<.5;const sd=sidesOf(k,L).filter(x=>x!=='X');const last=sd[sd.length-1];
+ if(t==='dl'){const k=pickOne(ALLK.filter(x=>chiralCount(x)>0));const L=Math.random()<.5;const sd=sidesOf(k,L).filter(x=>x!=='X');const last=sd[sd.length-1];
   return {kind:'fischer',html:`<p class="prompt">Is this a D-sugar or an L-sugar?</p><div class="struct">${fischerSVG(k,L)}</div>`,options:[{key:'D',html:'D-sugar'},{key:'L',html:'L-sugar'}],answer:last==='R'?'D':'L',hint:'Look at the chiral carbon farthest from the carbonyl (the one just above the bottom CH2OH). OH on the right = D, OH on the left = L.',why:`The last chiral carbon has its –OH on the ${last==='R'?'right, so it is a D-sugar':'left, so it is an L-sugar'}. This is ${sugName(k,L)}.`,cols:2}}
- const pool=['erythrose','threose','ribose','arabinose','xylose','glucose','mannose','galactose','fructose','deoxyribose'];const k=pickOne(pool);const L=Math.random()<.3;
+ const pool=ALLK.filter(x=>chiralCount(x)>0);const k=pickOne(pool);const L=Math.random()<.3;
  const sibs=shuf(pool.filter(x=>x!==k&&SUG[x].n===SUG[k].n&&SUG[x].type===SUG[k].type));const cand=[{k,L}];
  if(sibs.length)cand.push({k:sibs[0],L});cand.push({k,L:!L});sibs.slice(1).forEach(x=>cand.push({k:x,L}));cand.push({k:pickOne(pool.filter(x=>x!==k&&!sibs.includes(x))),L:Math.random()<.3});
  const seen=new Set([sugName(k,L)]),opts=[{k,L}];for(const c of cand.slice(1)){const nme=sugName(c.k,c.L);if(!seen.has(nme)){seen.add(nme);opts.push(c);if(opts.length===4)break}}
@@ -259,8 +269,8 @@ function genHaworth(){const t=haBag();const k=pickOne(HS);const a=pickOne(['α',
 const REL={enantiomer:['Enantiomers','mirror images: every chiral carbon is reversed (D and L forms of the same sugar).'],epimer:['Epimers','they differ at only ONE chiral carbon.'],structural:['Structural isomers','same formula but a different functional group (aldose vs ketose).'],none:['Not isomers','they have different formulas (different numbers of carbons).']};
 function genStereo(){const t=stBag();
  if(t==='count'){const k=pickOne(ALLK);const L=Math.random()<.3&&chiralCount(k)>0;const c=chiralCount(k);const set=new Set([c]);[c+1,c+2,Math.max(0,c-1),c+3,c-2].forEach(x=>{if(x>=0&&set.size<4)set.add(x)});const opts=[...set].sort((a,b)=>a-b);
-  return {kind:'stereo',html:`<p class="prompt">How many chiral carbons are in this molecule?</p><div class="struct">${fischerSVG(k,L)}</div>`,options:opts.map(o=>({key:String(o),html:String(o)})),answer:String(c),hint:'Chiral carbons are the carbons that carry both an H and an OH on the sides. The carbonyl carbon, the C=O carbon and the end CH₂OH carbons are not chiral.',why:`${sugName(k,L)} has ${c} chiral carbon${c===1?'':'s'}${k==='deoxyribose'?' (C2 is a CH₂ group, so it is not chiral)':k==='dihydroxyacetone'?' (no carbon has four different groups)':''}.`,cols:4}}
- const cat=relBag();let a,b,tries=0;const lib=ALLK.filter(x=>x!=='deoxyribose');
+  return {kind:'stereo',html:`<p class="prompt">How many chiral carbons are in this molecule?</p><div class="struct">${fischerSVG(k,L)}</div>`,options:opts.map(o=>({key:String(o),html:String(o)})),answer:String(c),hint:'Chiral carbons are the carbons that carry both an H and an OH on the sides. The carbonyl carbon, the C=O carbon and the end CH₂OH carbons are not chiral.',why:`${sugName(k,L)} has ${c} chiral carbon${c===1?'':'s'}${k==='deoxyribose'?'':k==='dihydroxyacetone'?' (no carbon has four different groups)':''}.`,cols:4}}
+ const cat=relBag();let a,b,tries=0;const lib=ALLK;
  while(tries++<500){const A={k:pickOne(lib),L:Math.random()<.3},B={k:pickOne(lib),L:Math.random()<.3};const r=rel(A,B);if(r===cat&&(cat!=='enantiomer'||A.k===B.k)&&(cat!=='none'||SUG[A.k].n!==SUG[B.k].n)){a=A;b=B;break}}
  if(!a){a={k:'glucose',L:false};b={k:'galactose',L:false}}
  const r=rel(a,b);
@@ -339,7 +349,7 @@ function hint(){if(state.done)return;$('hintBox').textContent='💡 '+state.q.hi
 function show(){if(state.done)return;state.revealed=true;state.selected=state.q.answer;finish()}
 function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const box=$('celebrate'),cols=['#ff7d73','#70b7e8','#8fd8c8','#f7c968','#b9a3e6','#f2a8c4'];for(let i=0;i<55;i++){const p=document.createElement('i');p.className='confetti';p.style.left=Math.random()*100+'vw';p.style.top='-20px';p.style.background=cols[i%6];p.style.animationDelay=Math.random()*.5+'s';box.appendChild(p);setTimeout(()=>p.remove(),3600)}}
 const REF=[['Aldose','–CHO at C1','aldo-','glucose'],['Ketose','C=O at C2','keto-','fructose'],['D-sugar','Last chiral C: OH on right','D-','D-glucose'],['α anomer','Anomeric OH down (D-sugar)','α-','α-D-glucopyranose'],['β anomer','Anomeric OH up (D-sugar)','β-','β-D-glucopyranose'],['Pyranose','6-membered ring (5 C + O)','-pyranose','glucose'],['Furanose','5-membered ring (4 C + O)','-furanose','fructose, ribose'],['Epimers','Differ at ONE chiral C','','glucose / galactose'],['Reducing sugar','Free anomeric C','positive Benedict','maltose, lactose'],['Glycosidic bond','Joins two sugars (–H₂O)','α or β (1→4)','sucrose α(1→2)β']];
-function renderRef(){$('refBody').innerHTML=`<div class="table-scroll"><table class="ref-table"><thead><tr><th>Term</th><th>Key feature</th><th>Name</th><th>Example</th></tr></thead><tbody>${REF.map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' class="g"':''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="footer-note"><b>D-glucose Fischer:</b> OH on C2–C5 = right, left, right, right. Galactose differs at C4, mannose at C2.<br><b>Haworth (D-sugars):</b> right in Fischer = down, left = up; CH₂OH is up.<br><b>Linkages:</b> maltose α(1→4); lactose β(1→4); sucrose α(1→2)β; amylose α(1→4); amylopectin and glycogen add α(1→6) branches; cellulose β(1→4).<br><b>Benedict's test:</b> reducing sugars give orange-red Cu₂O. Sucrose does not.</p>`}
+function renderRef(){$('refBody').innerHTML=`<div class="table-scroll"><table class="ref-table"><thead><tr><th>Term</th><th>Key feature</th><th>Name</th><th>Example</th></tr></thead><tbody>${REF.map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' class="g"':''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="footer-note"><b>Fischer projections</b> match the CHEM 3B Exam #3 reference sheet (23 sugars, all D-forms).<br><b>D-glucose Fischer:</b> OH on C2–C5 = right, left, right, right. Galactose differs at C4, mannose at C2.<br><b>Haworth (D-sugars):</b> right in Fischer = down, left = up; CH₂OH is up.<br><b>Linkages:</b> maltose α(1→4); lactose β(1→4); sucrose α(1→2)β; amylose α(1→4); amylopectin and glycogen add α(1→6) branches; cellulose β(1→4).<br><b>Benedict's test:</b> reducing sugars give orange-red Cu₂O. Sucrose does not.</p>`}
 
 
 (function(){const KEY='itsdrdan-carbs-ui-v1',phone=()=>matchMedia('(max-width:700px)').matches;let ui={};try{ui=JSON.parse(localStorage.getItem(KEY)||'{}')}catch{}
