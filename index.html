@@ -227,9 +227,9 @@ function havSpec(k,anom){const s=SUG[k];const sd=s.sides;
  return null}
 const hl=(x,ox,y,l)=>l==='CH2OH'?txt(x-6,y,l,COL.C,16,'start'):(l==='OH'?txt(x+ox-6.5,y,l,COL.O,16,'start'):txt(x+ox,y,l,COL.C,16));
 function haworthSVG(k,anom,opt){opt=opt||{};const sp=havSpec(k,anom),sc=opt.scale||1,keto=SUG[k].type==='keto';let P,order,front;
- if(sp.size===6){P={O:[190,56],C1:[240,92],C2:[170,130],C3:[75,130],C4:[28,92],C5:[108,56]};order=['O','C1','C2','C3','C4','C5'];front=['C2','C3']}
- else if(keto){P={O:[178,44],C2:[244,88],C3:[216,138],C4:[124,138],C5:[96,88]};order=['O','C2','C3','C4','C5'];front=['C3','C4']}
- else{P={O:[178,44],C1:[244,88],C2:[216,138],C3:[124,138],C4:[96,88]};order=['O','C1','C2','C3','C4'];front=['C2','C3']}
+ if(sp.size===6){P={O:[156,56],C1:[234,92],C2:[190,130],C3:[78,130],C4:[34,92],C5:[112,56]};order=['O','C1','C2','C3','C4','C5'];front=['C2','C3']}
+ else if(keto){P={O:[170,44],C2:[244,88],C3:[216,138],C4:[124,138],C5:[96,88]};order=['O','C2','C3','C4','C5'];front=['C3','C4']}
+ else{P={O:[170,44],C1:[244,88],C2:[216,138],C3:[124,138],C4:[96,88]};order=['O','C1','C2','C3','C4'];front=['C2','C3']}
  let out='';for(let i=0;i<order.length;i++){const A=order[i],B=order[(i+1)%order.length],a=P[A],b=P[B];out+=ln(a[0],a[1],b[0],b[1],(A===front[0]&&B===front[1])?5.5:2.6)}
  out+=txt(P.O[0],P.O[1],'O',COL.O);const colr=l=>l==='OH'?COL.O:COL.C;
  sp.ring.forEach(r=>{const p=P[r.c];const fr=front.includes(r.c),bk=!fr&&r.c!=='C1'&&!(keto&&r.c==='C2')&&r.c!=='C4'?1:0;const du=fr?24:30,dd=bk?24:30,ox=(r.c==='C1'||(keto&&r.c==='C2'))?0:0;out+=ln(p[0],p[1],p[0]+ox*0,p[1]-du)+ln(p[0],p[1],p[0],p[1]+dd)+hl(p[0],ox,p[1]-du-10,r.up)+hl(p[0],ox,p[1]+dd+10,r.down);out+=`<text x="${(p[0]+(125-p[0])*.24).toFixed(0)}" y="${(p[1]+(88-p[1])*.24+4).toFixed(0)}" text-anchor="middle" font-size="11" fill="#8a96a0" font-family="Inter,sans-serif">${r.c.slice(1)}</text>`});
