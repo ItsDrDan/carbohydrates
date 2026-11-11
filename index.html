@@ -620,6 +620,12 @@ window.FBX={version:FBX_VERSION,mount:fbxMount,qHTML,optHTML,molSVG,figBlock,str
 
 })();</script>
 <!--FBX:END-->
+<script src="https://itsdrdan.github.io/questionbank/whys.js" defer></script>
+<script>
+/* Per-choice "why" feedback from the shared question bank (itsdrdan.github.io/questionbank/whys.js).
+   qbWhy(item, picked, ctx) returns a short reason the picked wrong choice is wrong, or '' if it can't tell (or is offline). */
+function qbWhy(item,picked,ctx){try{return window.QBWhy?(QBWhy.reason(item,picked,ctx)||''):''}catch(e){return ''}}
+</script>
 </head>
 <body>
 <div class="celebrate" id="celebrate"></div><div class="toast" id="toast" role="status"></div>
@@ -1024,8 +1030,11 @@ function finish(){ddLog(!state.revealed,state.revealed?'revealed':'');state.done
  if(state.revealed){state.assisted++;state.streak=0;mascot('normal');fb('good',ico('eye')+' '+q.why+'<br><small>Assisted: this question earns no point. Try the next one on your own.</small>');awardXP(true)}
  else{state.correct++;state.streak++;confetti();fb('good',ico('check')+' <b>Correct!</b> '+q.why);awardXP(false);mascot(state.streak>=3?'wow':'happy',3500)}updateStats()}
 function ddLog(ok,slip){try{const q=state.q;if(!q||q.ddLogged||!window.ddTrack)return;q.ddLogged=1;const m=MODES.find(x=>x.id===state.mode);ddTrack({game:'carbohydrates',course:'3B',mode:'Practice',topic:m?m.title:state.mode,correct:!!ok,slip:ok?'':(slip||'')});}catch(e){}}
+
+/* wrong-choice reason for the current question, from the shared question bank */
+function qbWhyQ(q,k){try{const sk={classify:'classify',fischer:'fischer',haworth:'haworth',stereo:'stereo',disacc:'disaccharides',react:'sugar-reactions'}[q.mode||state.mode];if(!sk||!q.options)return '';const t=o=>o.html,o=q.options,a=o.find(x=>x.key===q.answer),p=o.find(x=>x.key===k);if(!a||!p)return '';return qbWhy({skill:'carbohydrates.'+sk,prompt:q.html,choices:o.map(t),answer:t(a),explain:q.why||''},t(p),{SUG:typeof SUG!=='undefined'?(Array.isArray(SUG)?Object.fromEntries(SUG):SUG):undefined})}catch(e){return ''}}
 function check(){if(state.done)return;if(!state.selected){fb('bad','Choose an answer first.');return}
- if(state.selected!==state.q.answer){const sl=slipFor(state.q,state.selected);state.streak=0;updateStats();ddLog(false,sl[0]);mascot('hmm',2600);$('questionArea').querySelectorAll('.option').forEach(b=>{if(b.dataset.key===state.selected){b.classList.add('wrong');b.classList.remove('selected')}});state.selected=null;if(!state.q.slip)state.q.slip=sl[0];const nt=state.q.notes&&state.q.notes[state.selected];fb('bad',ico('x')+' <b>Not quite.</b> '+(nt||sl[1]||esc(state.q.hint)));return}
+ if(state.selected!==state.q.answer){const pk=state.selected,qw=qbWhyQ(state.q,pk);const sl=slipFor(state.q,state.selected);state.streak=0;updateStats();ddLog(false,sl[0]);mascot('hmm',2600);$('questionArea').querySelectorAll('.option').forEach(b=>{if(b.dataset.key===state.selected){b.classList.add('wrong');b.classList.remove('selected')}});state.selected=null;if(!state.q.slip)state.q.slip=sl[0];const nt=state.q.notes&&state.q.notes[pk];fb('bad',ico('x')+' <b>Not quite.</b> '+(nt||qw||sl[1]||esc(state.q.hint)));return}
  finish()}
 function hint(){if(state.done)return;$('hintBox').innerHTML=ico('bulb')+' '+esc(state.q.hint);$('hintBox').className='hintbox show';mascot('thinking',4000)}
 function show(){if(state.done)return;state.revealed=true;state.selected=state.q.answer;finish()}
