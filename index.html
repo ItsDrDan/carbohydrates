@@ -137,6 +137,7 @@ details.directions .tip{margin:8px 18px 16px;background:#fff6d6;border-radius:12
 @media(max-width:700px){.mode-title{font-size:21px}.mode-tag{font-size:11px;padding:2px 8px;margin-right:6px}}
 .rx-scheme{gap:6px 10px;flex-wrap:wrap}.rx-scheme .fbx-figs{margin:0}.rx-arrow{flex:0 0 auto;max-width:100%}.rx-mol{display:flex;flex-direction:column;align-items:center;gap:2px}.rx-cap{font-weight:900;font-size:15px;color:#2d3f4b;text-align:center;max-width:170px;line-height:1.2}.rx-q{width:110px;height:170px;border:2px dashed #c9b8a0;border-radius:14px;display:flex;align-items:center;justify-content:center;font:900 44px Fredoka,Inter,sans-serif;color:#c0473b}.opt-body .fbx .fbx-figs{margin:0}.opt-body .fbx .fbx-fsvg{max-height:200px;width:auto}.feedback .struct{margin-top:10px}
 @media(max-width:700px){.rx-scheme{flex-wrap:nowrap;gap:2px;padding:6px 2px}.rx-scheme .fbx-fsvg{max-width:31vw}.rx-arrow{width:24vw;height:auto}.rx-q{width:26vw;height:140px}.rx-cap{font-size:12px;max-width:31vw}}
+.conv-tab{border-collapse:collapse;margin:8px 0 10px;font-size:.95em}.conv-tab th,.conv-tab td{border:1px solid #d9cfe8;padding:4px 10px;text-align:left}.conv-tab th{background:#f4effb}
 </style><script src="https://itsdrdan.github.io/games/track.js" defer></script>
 <script src="https://itsdrdan.github.io/games/brand/icons.js" defer></script>
 <script src="https://itsdrdan.github.io/games/brand/embed.js" defer></script>
@@ -734,7 +735,9 @@ const nice=k=>k==='dihydroxyacetone'?'1,3-dihydroxyacetone':k;
 const clsBag=bag(['draw','name','draw']),fiBag=bag(['dl','id','id','dl']),haBag=bag(['convert','anomer','unconvert','ring','convert','match','anomer','unconvert','match']),stBag=bag(['count','rel','rel','count']),diBag=bag(['drawlink','form','comp','label','drawid','source','form','drawlink','link','label','poly','drawid','red','red','digest']),rxBag=bag(['benedict','benedict','ox','red','hydro','ferment','cond','dprod','dtype','dname','dprod','dtype']);
 const relBag=bag(['enantiomer','epimer','structural','none']);
 function kindWhy(k){const s=SUG[k];return `${sugKind(k)}: ${s.n} carbons (${SZ[s.n]}ose) and ${s.type==='aldo'?'an aldehyde (–CHO) at C1, so it is an aldose':'a ketone (C=O) at C2, so it is a ketose'}.`}
-function genClassify(){const k=pickOne(ALLK);const L=Math.random()<.25&&chiralCount(k)>0;const ans=sugKind(k),s=SUG[k];
+const clsKindBag=bag([...new Set(ALLK.map(k=>sugKind(k)))]),clsSugBags={};
+function clsPick(){const kind=clsKindBag();if(!clsSugBags[kind])clsSugBags[kind]=bag(ALLK.filter(k=>sugKind(k)===kind));return clsSugBags[kind]()}
+function genClassify(){const k=clsPick();const L=Math.random()<.25&&chiralCount(k)>0;const ans=sugKind(k),s=SUG[k];
  const sw=(s.type==='aldo'?'keto':'aldo')+SZ[s.n]+'ose';const others=KINDS.filter(x=>x!==ans);const alt=[sw,...shuf(others.filter(x=>x!==sw))].slice(0,3);const opts=shuf([ans,...alt]);const showDraw=clsBag()==='draw';
  const prompt=showDraw?`<p class="prompt">What type of monosaccharide is shown?</p><div class="struct">${fischerSVG(k,L)}</div>`:`<p class="prompt">${esc(nice(k)[0].toUpperCase()+nice(k).slice(1))} contains ${s.n} carbons and ${s.type==='aldo'?'an aldehyde group':'a ketone group'}. How is it classified?</p>`;
  return {kind:'classify',html:prompt,options:opts.map(o=>({key:o,html:o})),answer:ans,hint:'Count the carbons for the size (tri-, tetr-, pent-, hex-). Look at the top: –CHO means aldo-, a C=O in the middle (at C2) means keto-.',why:kindWhy(k)+(showDraw?` This is ${sugName(k,L)}.`:''),cols:2}}
@@ -802,18 +805,21 @@ const ACID={glucose:'gluconic acid',galactose:'galactonic acid',mannose:'mannoni
 const AHEX=['glucose','galactose','mannose','allose','altrose','gulose','idose','talose'];
 const pickHex=()=>Math.random()<.7?pickOne(['glucose','galactose','mannose']):pickOne(AHEX);
 const hwSubsOf=(sd,an)=>[an==='a'?['H','OH']:['OH','H'],...sd.slice(0,3).map(v=>v==='R'?['H','OH']:['OH','H']),['CH<sub>2</sub>OH','H']];
-const fiFigOf=(sd,cap)=>({type:'fischer',top:'CHO',bottom:'CH<sub>2</sub>OH',rows:sd.map(v=>v==='R'?['H','OH']:['HO','H']),cap});
-const hwFigOf=(sd,an,o)=>Object.assign({type:'haworth',size:6,subs:hwSubsOf(sd,an)},o||{});
+const fiFigOf=(sd,cap)=>({type:'fischer',top:'CHO',bottom:'CH<sub>2</sub>OH',rows:sd.map(v=>v==='R'?['H','OH']:['HO','H']),cap,nums:true});
+const hwFigOf=(sd,an,o)=>Object.assign({type:'haworth',size:6,subs:hwSubsOf(sd,an),nums:true},o||{});
+/* Carbon-by-carbon Fischer → Haworth table for explanations (students were reading the ring left to right, which runs C4 → C1) */
+const convTable=(sd,an)=>{const row=(c,f,r)=>`<tr><td><b>${c}</b></td><td>${f}</td><td>${r}</td></tr>`;return `<table class="conv-tab"><tr><th>Carbon</th><th>Fischer (–OH)</th><th>Haworth ring (–OH)</th></tr>`+row('C1','the C=O (–CHO)',an==='a'?'<b>down</b> (α)':'<b>up</b> (β)')+sd.slice(0,3).map((v,i)=>row('C'+(i+2),v==='R'?'right':'left',v==='R'?'<b>down</b>':'<b>up</b>')).join('')+row('C5',sd[3]==='R'?'right (D-sugar)':'left','ring O; CH₂OH points <b>up</b>')+`</table>`};
+const ringRead='<b>Reading the ring:</b> C1 is the carbon just right of the ring O. Go clockwise: C1 (right) → C2 (front right) → C3 (front left) → C4 (left) → C5 (back left, holds the CH₂OH). Reading left to right goes C4 → C1, backwards.';
 const figOpt=f=>`<span class="fbx">${window.FBX?FBX.figBlock([f]):''}</span>`;
 const figBox=f=>`<div class="struct fbx">${window.FBX?FBX.figBlock([f]):''}</div>`;
 const flipAt=(sd,idx)=>sd.map((v,i)=>idx.includes(i)?(v==='R'?'L':'R'):v);
 const AN={a:'α',b:'β'};
-const convWhy='Fischer → Haworth (D-sugars): an –OH on the <b>right</b> in the Fischer projection points <b>down</b> in the ring; on the left it points <b>up</b>. The CH₂OH on C5 points up. α = anomeric –OH down (opposite the CH₂OH); β = up.';
+const convWhy='Fischer → Haworth (D-sugars): match carbon to carbon by number. An –OH on the <b>right</b> in the Fischer projection points <b>down</b> in the ring; on the left it points <b>up</b>. The CH₂OH on C5 points up. α = anomeric –OH down (opposite the CH₂OH); β = up.';
 function genConvert(t){const k=pickHex(),sd=SUG[k].sides.slice(),an=pickOne(['a','b']),j=rnd(0,2);
  if(t==='convert'){const opts=[['ok',hwFigOf(sd,an)],['anom',hwFigOf(sd,an==='a'?'b':'a')],['flip',hwFigOf(flipAt(sd,[0,1,2]),an)],['epi',hwFigOf(flipAt(sd,[j]),an)]];
-  return {kind:'haworth',html:`<p class="prompt">D-${k} closes into a six-membered ring as the <b>${AN[an]}</b> anomer. Which Haworth projection is correct?</p>${figBox(fiFigOf(sd,'D-'+k))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{anom:'alpha-beta',flip:'haworth-flip',epi:'epimer-mixup'},hint:convWhy,why:`${convWhy} So ${AN[an]}-D-${k} is drawn like this:${figBox(hwFigOf(sd,an,{nums:true}))}`,cols:2,struct:true}}
+  return {kind:'haworth',html:`<p class="prompt">D-${k} closes into a six-membered ring as the <b>${AN[an]}</b> anomer. Which Haworth projection is correct?</p>${figBox(fiFigOf(sd,'D-'+k))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{anom:'alpha-beta',flip:'haworth-flip',epi:'epimer-mixup'},hint:convWhy+' '+ringRead,why:`${convWhy}${convTable(sd,an)}<p>${ringRead}</p>So ${AN[an]}-D-${k} is drawn like this:${figBox(hwFigOf(sd,an,{nums:true}))}`,cols:2,struct:true}}
  const L=mirror(sd),opts=[['ok',fiFigOf(sd)],['flip',fiFigOf(flipAt(sd,[0,1,2]))],['epi',fiFigOf(flipAt(sd,[j]))],['L',fiFigOf(L)]];
- return {kind:'haworth',html:`<p class="prompt">Which Fischer projection shows the open-chain form of this ring sugar?</p>${figBox(hwFigOf(sd,an,{nums:true}))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{flip:'haworth-flip',epi:'epimer-mixup',L:'dl-flip'},hint:'Ring → Fischer: an –OH pointing down in the ring goes on the right; up goes on the left. The CH₂OH pointing up means C5 has its –OH on the right (a D-sugar). The anomeric C1 becomes the –CHO, so α or β does not matter.',why:`Down in the ring = right in the Fischer projection; up = left. This ring is ${AN[an]}-D-${k}, and its open-chain form is D-${k}:${figBox(fiFigOf(sd,'D-'+k))}`,cols:2,struct:true}}
+ return {kind:'haworth',html:`<p class="prompt">Which Fischer projection shows the open-chain form of this ring sugar?</p>${figBox(hwFigOf(sd,an,{nums:true}))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{flip:'haworth-flip',epi:'epimer-mixup',L:'dl-flip'},hint:'Ring → Fischer: match carbon to carbon by number. An –OH pointing down in the ring goes on the right; up goes on the left. The CH₂OH pointing up means C5 has its –OH on the right (a D-sugar). The anomeric C1 becomes the –CHO, so α or β does not matter. '+ringRead,why:`Down in the ring = right in the Fischer projection; up = left. This ring is ${AN[an]}-D-${k}:${convTable(sd,an)}<p>${ringRead}</p>Its open-chain form is D-${k}:${figBox(fiFigOf(sd,'D-'+k))}`,cols:2,struct:true}}
 
 /* ===== Condensation: draw the glycosidic bond ===== */
 const FORM=[{l:'glucose',an:'a',name:'maltose'},{l:'glucose',an:'b',name:'cellobiose'},{l:'galactose',an:'b',name:'lactose'},{l:'galactose',an:'a',name:''}];
