@@ -988,6 +988,53 @@ genHaworth = function () {
   return q;
 };
 /*HAWORTH-NOTES-END*/
+
+/*A11Y-START*/
+/* Screen-reader descriptions for structure drawings (2026-11-14). Each label says what the drawing shows (groups, positions,
+   ring size, links, visible captions and letter tags) and never the answer name. Tested by tools/check-a11y.js. */
+const A11Y_HW = {glucose:[6,[['H','OH'],['OH','H'],['H','OH'],['CH2OH','H']],[1,2,3,4,5]],galactose:[6,[['H','OH'],['OH','H'],['OH','H'],['CH2OH','H']],[1,2,3,4,5]],mannose:[6,[['OH','H'],['OH','H'],['H','OH'],['CH2OH','H']],[1,2,3,4,5]],fructose:[5,[['OH','H'],['H','OH'],['CH2OH','H']],[2,3,4,5]],ribose:[5,[['H','OH'],['H','OH'],['CH2OH','H']],[1,2,3,4]],deoxyribose:[5,[['H','H'],['H','OH'],['CH2OH','H']],[1,2,3,4]]}; /* same data as the drawing engine's HW_SUG, with plain-text groups */
+const a11yTxt = h => { const t = String(h == null ? '' : h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); return ({ HO: 'OH', HOCH2: 'CH2OH', H3C: 'CH3', H2N: 'NH2', HOOC: 'COOH' })[t] || t; }; /* mirrored drawing labels read the same as their normal form */
+const a11yAttr = t => a11yTxt(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function a11yPair(c, up, down) { up = a11yTxt(up); down = a11yTxt(down);
+  if (up === 'H' && down === 'H') return c + ' H on both sides';
+  if (up === 'H' || !up) return c + ' ' + down + ' down';
+  if (down === 'H' || !down) return c + ' ' + up + ' up';
+  return c + ' ' + up + ' up and ' + down + ' down'; }
+function a11yRingSubs(r) { /* returns {size, subs [[up,down]] from the anomeric carbon on, nums} for an FBX ring spec */
+  if (r.sugar && A11Y_HW[r.sugar]) { const h = A11Y_HW[r.sugar], fr = r.sugar === 'fructose', an = r.anomer === 'a' ? (fr ? ['CH2OH', 'OH'] : ['H', 'OH']) : (fr ? ['OH', 'CH2OH'] : ['OH', 'H']); return { size: h[0], subs: [an].concat(h[1]), nums: h[2] }; }
+  return { size: +r.size || (r.subs ? r.subs.length + 1 : 6), subs: r.subs || [], nums: Array.isArray(r.nums) ? r.nums : (r.subs || []).map((x, i) => i + 1) }; }
+const a11yRingSize = n => n === 6 ? 'six-membered (ring O and 5 carbons)' : n === 5 ? 'five-membered (ring O and 4 carbons)' : n + '-membered';
+function a11yRingText(r, link) { const R = a11yRingSubs(r); return a11yRingSize(R.size) + ': ' + R.subs.map((x, i) => { if (link && link[0] === i) { const up = link[1] === 'up', other = up ? x[1] : x[0]; return 'C' + R.nums[i] + ' bond to the bridging O ' + link[1] + (other && a11yTxt(other) !== 'H' ? ', ' + a11yTxt(other) + (up ? ' down' : ' up') : ''); } return a11yPair('C' + R.nums[i], x[0], x[1]); }).join('; '); } /* in a disaccharide the linked carbon shows the O bridge instead of its –OH */
+function a11yTagText(r, where) { const t = r.tags || {}, out = []; const R = a11yRingSubs(r);
+  Object.entries(t).forEach(([k, l]) => out.push(`label ${a11yTxt(l)} is on ${k === 'O' ? 'the ring O' : 'C' + R.nums[+k]}${where}`)); return out; }
+function a11yHaworth(f) {
+  const cap = f.cap ? ' Caption: ' + a11yTxt(f.cap) + '.' : '';
+  if (f.rings) { const L = f.rings[0], Rr = f.rings[1], lk = f.link || {}, nL = a11yRingSubs(L).nums, nR = a11yRingSubs(Rr).nums;
+    const join = lk.from && lk.to ? ` The bridging O joins C${nL[lk.from[0]]} of the left ring (bond pointing ${lk.from[1]}) to C${nR[lk.to[0]]} of the right ring.` : '';
+    const tags = [...a11yTagText(L, ' of the left ring'), ...a11yTagText(Rr, ' of the right ring')].concat(lk.tag ? ['label ' + a11yTxt(lk.tag) + ' is the bridging O'] : []);
+    return `Two Haworth rings joined through an O. Left ring, ${a11yRingText(L, lk.from)}. Right ring, ${a11yRingText(Rr, lk.to)}.${join}${tags.length ? ' ' + tags.join('; ') + '.' : ''}${cap}`; }
+  const tags = a11yTagText(f, '');
+  return `Haworth ring, ${a11yRingText(f)}.${tags.length ? ' ' + tags.join('; ') + '.' : ''}${cap}`; }
+function a11yFischer(f) {
+  let n = 1; const parts = ['C' + (n++) + ' ' + a11yTxt(f.top || 'CHO')];
+  (f.rows || []).forEach(r => { const c = 'C' + (n++); parts.push(typeof r === 'string' ? c + ' ' + a11yTxt(r) : `${c} ${a11yTxt(r[0])} left, ${a11yTxt(r[1])} right`); });
+  parts.push('C' + (n++) + ' ' + a11yTxt(f.bottom || 'CH2OH'));
+  return 'Fischer projection, top to bottom: ' + parts.join('; ') + '.' + (f.cap ? ' Caption: ' + a11yTxt(f.cap) + '.' : ''); }
+function a11yFig(f) { try { if (!f || f.items) return ''; if (f.type === 'haworth') return a11yHaworth(f); if (f.type === 'fischer') return a11yFischer(f); } catch (e) {} return ''; }
+/* the game's own Fischer and Haworth drawings */
+function a11yFischerSVG(k, L) { const s = SUG[k], sd = sidesOf(k, L); const parts = ['C1 ' + (s.type === 'aldo' ? 'CHO' : 'CH2OH')]; let n = 2; if (s.type === 'keto') parts.push('C' + (n++) + ' C=O');
+  sd.forEach(v => parts.push('C' + (n++) + ' ' + (v === 'X' ? 'H on both sides' : v === 'L' ? 'OH left, H right' : 'H left, OH right'))); parts.push('C' + n + ' CH2OH');
+  return 'Fischer projection, top to bottom: ' + parts.join('; ') + '.'; }
+function a11yHaworthSVG(k, anom) { const sp = havSpec(k, anom); return `Haworth ring, ${a11yRingSize(sp.size)}: ` + sp.ring.map(r => a11yPair(r.c, r.up, r.down)).join('; ') + '.'; }
+(function () {
+  const _fi = fischerSVG, _hw = haworthSVG;
+  fischerSVG = function (k, L, opt) { return _fi(k, L, opt).replace('aria-label="Fischer projection"', 'aria-label="' + a11yAttr(a11yFischerSVG(k, L)) + '"'); };
+  haworthSVG = function (k, anom, opt) { return _hw(k, anom, opt).replace('aria-label="Haworth projection"', 'aria-label="' + a11yAttr(a11yHaworthSVG(k, anom)) + '"'); };
+  if (window.FBX && FBX.figBlock) { const _fb = FBX.figBlock;
+    FBX.figBlock = function (figs) { const out = _fb.apply(this, arguments); if (!Array.isArray(figs)) return out; const labs = []; figs.forEach(g => { if (g && g.items) g.items.forEach(() => labs.push('')); else labs.push(a11yFig(g)); });
+      let i = 0; return out.replace(/(<svg[^>]*?role="img" aria-label=")([^"]*)(")/g, (m, a, old, c) => { const L = labs[i++]; return L ? a + a11yAttr(L) + c : m; }); }; }
+})();
+/*A11Y-END*/
 const GEN={classify:genClassify,fischer:genFischer,haworth:genHaworth,stereo:genStereo,disacc:genDisacc,react:genReact};
 
 /* ===== UI state, journey, rendering ===== */
