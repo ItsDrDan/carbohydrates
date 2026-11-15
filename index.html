@@ -847,9 +847,9 @@ const AN={a:'α',b:'β'};
 const convWhy='Fischer → Haworth (D-sugars): match carbon to carbon by number. An –OH on the <b>right</b> in the Fischer projection points <b>down</b> in the ring; on the left it points <b>up</b>. The CH₂OH on C5 points up. α = anomeric –OH down (opposite the CH₂OH); β = up.';
 function genConvert(t){const k=pickHex(),sd=SUG[k].sides.slice(),an=pickOne(['a','b']),j=rnd(0,2);
  if(t==='convert'){const opts=[['ok',hwFigOf(sd,an)],['anom',hwFigOf(sd,an==='a'?'b':'a')],['flip',hwFigOf(flipAt(sd,[0,1,2]),an)],['epi',hwFigOf(flipAt(sd,[j]),an)]];
-  return {kind:'haworth',html:`<p class="prompt">D-${k} closes into a six-membered ring as the <b>${AN[an]}</b> anomer. Which Haworth projection is correct?</p>${figBox(fiFigOf(sd,'D-'+k))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{anom:'alpha-beta',flip:'haworth-flip',epi:'epimer-mixup'},hint:convWhy+' '+ringRead,why:`${convWhy}${convTable(sd,an)}<p>${ringRead}</p>So ${AN[an]}-D-${k} is drawn like this:${figBox(hwFigOf(sd,an,{nums:true}))}`,cols:2,struct:true}}
+  return {kind:'haworth',html:`<p class="prompt">D-${k} closes into a six-membered ring as the <b>${AN[an]}</b> anomer. Which Haworth projection is correct?</p>${figBox(fiFigOf(sd,'D-'+k))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{anom:'alpha-beta',flip:'haworth-flip',epi:'epimer-mixup'},notes:{anom:`Right ring, wrong anomer. In the ${AN[an]} anomer of a D-sugar, the C1 –OH points <b>${an==='a'?'down':'up'}</b>.`,flip:'Every –OH on C2, C3 and C4 is flipped. An –OH on the <b>right</b> in the Fischer projection points <b>down</b> in the ring; left points up.',epi:`One carbon is flipped: C${j+2}. Its –OH is on the <b>${sd[j]==='R'?'right':'left'}</b> in the Fischer projection, so it points <b>${sd[j]==='R'?'down':'up'}</b> in the ring.`},hint:convWhy+' '+ringRead,why:`${convWhy}${convTable(sd,an)}<p>${ringRead}</p>So ${AN[an]}-D-${k} is drawn like this:${figBox(hwFigOf(sd,an,{nums:true}))}`,cols:2,struct:true}}
  const L=mirror(sd),opts=[['ok',fiFigOf(sd)],['flip',fiFigOf(flipAt(sd,[0,1,2]))],['epi',fiFigOf(flipAt(sd,[j]))],['L',fiFigOf(L)]];
- return {kind:'haworth',html:`<p class="prompt">Which Fischer projection shows the open-chain form of this ring sugar?</p>${figBox(hwFigOf(sd,an,{nums:true}))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{flip:'haworth-flip',epi:'epimer-mixup',L:'dl-flip'},hint:'Ring → Fischer: match carbon to carbon by number. An –OH pointing down in the ring goes on the right; up goes on the left. The CH₂OH pointing up means C5 has its –OH on the right (a D-sugar). The anomeric C1 becomes the –CHO, so α or β does not matter. '+ringRead,why:`Down in the ring = right in the Fischer projection; up = left. This ring is ${AN[an]}-D-${k}:${convTable(sd,an)}<p>${ringRead}</p>Its open-chain form is D-${k}:${figBox(fiFigOf(sd,'D-'+k))}`,cols:2,struct:true}}
+ return {kind:'haworth',html:`<p class="prompt">Which Fischer projection shows the open-chain form of this ring sugar?</p>${figBox(hwFigOf(sd,an,{nums:true}))}`,options:shuf(opts).map(([key,f])=>({key,html:figOpt(f)})),answer:'ok',slips:{flip:'haworth-flip',epi:'epimer-mixup',L:'dl-flip'},notes:{flip:'Every –OH on C2, C3 and C4 is flipped. An –OH pointing <b>down</b> in the ring goes on the <b>right</b> in the Fischer projection; up goes on the left.',epi:`One carbon is flipped: C${j+2}. In the ring its –OH points <b>${sd[j]==='R'?'down':'up'}</b>, so in the Fischer projection it goes on the <b>${sd[j]==='R'?'right':'left'}</b>.`,L:'That is the L-sugar: every –OH is on the opposite side, including C5. The CH₂OH pointing up in the ring means C5 has its –OH on the right, a D-sugar.'},hint:'Ring → Fischer: match carbon to carbon by number. An –OH pointing down in the ring goes on the right; up goes on the left. The CH₂OH pointing up means C5 has its –OH on the right (a D-sugar). The anomeric C1 becomes the –CHO, so α or β does not matter. '+ringRead,why:`Down in the ring = right in the Fischer projection; up = left. This ring is ${AN[an]}-D-${k}:${convTable(sd,an)}<p>${ringRead}</p>Its open-chain form is D-${k}:${figBox(fiFigOf(sd,'D-'+k))}`,cols:2,struct:true}}
 
 /* ===== Condensation: draw the glycosidic bond ===== */
 const FORM=[{l:'glucose',an:'a',name:'maltose'},{l:'glucose',an:'b',name:'cellobiose'},{l:'galactose',an:'b',name:'lactose'},{l:'galactose',an:'a',name:''}];
@@ -960,6 +960,34 @@ function slipFor(q,sel){if(!q||sel==null)return ['choice',''];const a=String(q.a
  else if(Object.values(ACID).includes(a)&&Object.values(ALD).includes(c)||Object.values(ALD).includes(a)&&Object.values(ACID).includes(c))id='ox-red';
  else if(a in POLY)id='polysacch';
  return [id,SLIP_NOTE[id]||'']}
+
+/*HAWORTH-NOTES-START*/
+/* Wrong-pick reasons for the anomer, ring-name and match questions (2026-11-14). Options are named like
+   "β-D-glucopyranose"; each wrong option is compared with the answer sugar and anomer. */
+const HSTEM_K = Object.fromEntries(Object.entries(HSTEM).map(([k, v]) => [v, k]));
+const hwParse = key => { const m = String(key).match(/^(α|β)-D-(\w+)$/); return m ? { a: m[1], k: HSTEM_K[m[2]] } : null; };
+function hwNote(T, P, picture) {
+  const out = [], who = picture ? `That structure is ${havName(P.k, P.a)}. ` : '';
+  if (P.k !== T.k) {
+    const pyT = HSTEM[T.k].includes('pyran'), pyP = HSTEM[P.k].includes('pyran');
+    if (pyT !== pyP) out.push(`Count the ring atoms: ${P.k} forms a ${pyP ? 'six-membered (pyranose)' : 'five-membered (furanose)'} ring, but this one is ${pyT ? 'six-membered (5 C + O), a pyranose' : 'five-membered (4 C + O), a furanose'}.`);
+    else if (pyT) out.push('Glucose and galactose differ only at C4: in the ring, glucose has its C4 –OH <b>down</b> and galactose has it <b>up</b>.');
+    else out.push('Fructose is a ketose: its anomeric carbon is C2 and carries a CH₂OH. Ribose is an aldose: its anomeric carbon is C1 with only an H.');
+  }
+  if (P.a !== T.a) out.push(`Check the anomeric –OH (${T.k === 'fructose' ? 'C2' : 'C1'}, next to the ring O): for a D-sugar it points down in α and up in β.`);
+  return who + out.join(' ');
+}
+const _genHaworth = genHaworth;
+genHaworth = function () {
+  const q = _genHaworth();
+  if (!q || q.notes || !q.options) return q;
+  const T = hwParse(q.answer);
+  if (T) { q.notes = {}; const pic = /Which structure is/.test(q.html); q.options.forEach(o => { if (o.key === q.answer) return; const P = hwParse(o.key); if (P) q.notes[o.key] = hwNote(T, P, pic); }); return q; }
+  if (q.answer === 'α' || q.answer === 'β') { const k = (q.html.match(/D-(\w+) ring/) || [])[1]; const c = k === 'fructose' ? 'C2' : 'C1';
+    q.notes = { [q.answer === 'α' ? 'β' : 'α']: `Look at the anomeric carbon (${c}, next to the ring O). For a D-sugar, the anomeric –OH points down in α and up in β; here it points <b>${q.answer === 'α' ? 'down' : 'up'}</b>.` }; }
+  return q;
+};
+/*HAWORTH-NOTES-END*/
 const GEN={classify:genClassify,fischer:genFischer,haworth:genHaworth,stereo:genStereo,disacc:genDisacc,react:genReact};
 
 /* ===== UI state, journey, rendering ===== */
